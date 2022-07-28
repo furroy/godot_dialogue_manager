@@ -111,50 +111,10 @@ func _gui_input(event):
 		"Control+K":
 			toggle_comment()
 		"Alt+Up":
-			move_line(true)
+			move_line(-1)
 		"Alt+Down":
-			move_line(false)
+			move_line(1)
 
-func toggle_comment() -> void:
-	var start = -1
-	var end = -1 
-	if is_selection_active():
-		start = get_selection_from_line()
-		end = get_selection_to_line()
-	if -1 == start:
-		start = cursor_get_line()
-	if -1 == end:
-		end = cursor_get_line()
-	
-#	print("toggle comment from: ", start, " to: ", end)
-	var found_first := false
-	var am_commenting := false
-	for line_num in range(start, 1 + end):
-		var line = get_line(line_num)
-		if line.length() == 0:
-			continue
-		var has_comment : bool = "#" == line[0]
-		if not found_first:
-			found_first = true
-			am_commenting = not has_comment
-		if am_commenting and not has_comment:
-			set_line(line_num, "#" + line)
-		elif not am_commenting and has_comment:
-			set_line(line_num, line.substr(1))
-
-func move_line(up_flag : bool) -> void:
-	var cursor := get_cursor()
-	var line_num := cursor.y
-#	print("move_line: ", up_flag, " line_num: ", line_num)
-	if line_num != -1:
-		var offset := -1 if up_flag else 1
-		var new_line_num := line_num + offset
-		if new_line_num >= 0 and new_line_num < get_line_count():
-			var old_line := get_line(line_num)
-			var new_line := get_line(new_line_num)
-			set_line(line_num, new_line)
-			set_line(new_line_num, old_line)
-			set_cursor(Vector2(cursor.x, new_line_num))
 
 func get_cursor() -> Vector2:
 	return Vector2(cursor_get_column(), cursor_get_line())
@@ -164,6 +124,45 @@ func set_cursor(cursor: Vector2) -> void:
 	cursor_set_line(cursor.y, true)
 	cursor_set_column(cursor.x, true)
 
+
+func toggle_comment() -> void:
+	var cursor := get_cursor()
+	var from: int = cursor.y
+	var to: int = cursor.y
+	if is_selection_active():
+		from = get_selection_from_line()
+		to = get_selection_to_line()
+	
+	var lines := text.split("\n")
+	var will_comment := not lines[from].begins_with("#")
+	for i in range(from, to + 1):
+		lines[i] = "#" + lines[i] if will_comment else lines[i].substr(1)
+	
+	text = lines.join("\n")
+	select(from, 0, to, get_line_width(to))
+	set_cursor(cursor)
+
+
+func move_line(offset: int) -> void:
+	if is_selection_active(): return
+	
+	var cursor = get_cursor()
+	var lines := text.split("\n")
+	
+	if cursor.y + offset < 0: return
+	if cursor.y + offset >= lines.size(): return
+	
+	var line = lines[cursor.y]
+	var other_line = lines[cursor.y + offset]
+	
+	lines[cursor.y] = other_line
+	lines[cursor.y + offset] = line
+	
+	cursor.y += offset
+	
+	text = lines.join("\n")
+	set_cursor(cursor)
+	
 
 func insert_bbcode(open_tag: String, close_tag: String = "") -> void:
 	if close_tag == "":
