@@ -100,6 +100,9 @@ func apply_changes() -> void:
 		ResourceSaver.save(current_resource.resource_path, current_resource)
 		parse(true)
 
+#func _input(event):
+#	if event.is_action_pressed("dialogue_test"):
+#		_on_RunButton_pressed()
 
 ### Helpers
 
