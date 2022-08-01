@@ -707,6 +707,8 @@ func apply_operation(operator: String, first_value, second_value):
 		"+", "+=":
 			first_value = 0 if first_value == null else first_value 
 			second_value = 0 if second_value == null else second_value 
+			if typeof(first_value) == TYPE_STRING:
+				second_value = String(second_value)
 			return first_value + second_value
 		"-", "-=":
 			first_value = 0 if first_value == null else first_value 
