@@ -185,10 +185,17 @@ func open_resource(resource: DialogueResource) -> void:
 
 
 func open_resource_from_path(path: String) -> void:
+	var file := File.new()
+	if not file.file_exists(path):
+		invalid_dialogue_dialog.dialog_text = "File not found:\n" + path
+		invalid_dialogue_dialog.popup_centered()
+		return
+
 	var resource = load(path)
 	if resource is DialogueResource:
 		open_resource(resource)
 	else:
+		invalid_dialogue_dialog.dialog_text = path + "\nIs not a DialogueResource."
 		invalid_dialogue_dialog.popup_centered()
 
 
