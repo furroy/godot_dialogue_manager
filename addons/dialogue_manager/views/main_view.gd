@@ -92,6 +92,7 @@ func _ready() -> void:
 	build_open_menu()
 	
 	editor.wrap_enabled = settings.get_editor_value("wrap_lines", false)
+	editor.connect("test_dialogue", self, "_on_RunButton_pressed")
 
 
 func apply_changes() -> void:

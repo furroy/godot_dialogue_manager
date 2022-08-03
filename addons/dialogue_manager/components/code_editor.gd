@@ -6,7 +6,7 @@ const ChooseTitleDialog = preload("res://addons/dialogue_manager/views/choose_ti
 
 
 signal active_title_changed(title)
-
+signal test_dialogue
 
 export var _choose_title_dialog := NodePath()
 
@@ -116,6 +116,8 @@ func _gui_input(event):
 			move_line(1)
 		"Control+D":
 			duplicate_line()
+		"F4":
+			emit_signal("test_dialogue")
 
 func duplicate_line() -> void:
 	var cursor := get_cursor()
