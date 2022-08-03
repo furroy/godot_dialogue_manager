@@ -114,7 +114,20 @@ func _gui_input(event):
 			move_line(-1)
 		"Alt+Down":
 			move_line(1)
+		"Control+D":
+			duplicate_line()
 
+func duplicate_line() -> void:
+	var cursor := get_cursor()
+	var from: int = cursor.y
+#	var to: int = cursor.y
+	var lines := text.split("\n")
+	var line = lines[from]
+	lines.insert(from, line)
+	text = lines.join("\n")
+#	select(from, 0, to, get_line_width(to))
+	cursor.y += 1
+	set_cursor(cursor)
 
 func get_cursor() -> Vector2:
 	return Vector2(cursor_get_column(), cursor_get_line())
