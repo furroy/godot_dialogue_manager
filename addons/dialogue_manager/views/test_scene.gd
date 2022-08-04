@@ -2,7 +2,7 @@ extends Node2D
 
 
 onready var settings = $Settings
-
+const dialog_folder = "res://dialog/"
 
 func _ready():
 #	get_tree().set_screen_stretch(SceneTree.STRETCH_MODE_2D, SceneTree.STRETCH_ASPECT_KEEP, Vector2(1920, 1080))
@@ -17,9 +17,9 @@ func _ready():
 	var dialogue_resource = load(full_path)
 	SaveGame.current_id = "start"
 	State.set("TESTING", true)
-	State.switch_scene(full_path.get_basename().get_file())
+	# grab path relative to dialog_folder
+	State.switch_scene(full_path.substr(dialog_folder.length()))
 #	DialogueManager.show_example_dialogue_balloon(title, dialogue_resource)
-
 
 func _input(event):
 	if event.is_action_pressed("ui_cancel"):
