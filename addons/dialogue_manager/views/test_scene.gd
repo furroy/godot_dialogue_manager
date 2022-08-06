@@ -13,7 +13,7 @@ func _ready():
 	DialogueManager.connect("dialogue_finished", self, "_on_dialogue_finished")
 	
 #	var title = settings.get_user_value("run_title")
-	var full_path = settings.get_user_value("run_resource")
+	var full_path = settings.get_user_value("run_resource_path")
 	var dialogue_resource = load(full_path)
 	SaveGame.current_id = "start"
 	State.set("TESTING", true)
