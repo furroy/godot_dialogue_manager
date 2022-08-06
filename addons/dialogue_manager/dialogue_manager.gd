@@ -24,6 +24,7 @@ var settings: DialogueSettings = DialogueSettings.new()
 var is_dialogue_running := false setget set_is_dialogue_running
 
 var _node_properties: Array = []
+var _extra_game_states: Array = []
 var _resource_cache: Array = []
 var _trash: Node = Node.new()
 
@@ -49,7 +50,7 @@ func _ready() -> void:
 
 # Step through lines and run any mutations until we either 
 # hit some dialogue or the end of the conversation
-func get_next_dialogue_line(key: String, override_resource: DialogueResource = null) -> DialogueLine:
+func get_next_dialogue_line(key: String, override_resource: DialogueResource = null, extra_game_states: Array = []) -> DialogueLine:
 	cleanup()
 	
 	# Fix up any keys that have spaces in them
@@ -61,6 +62,9 @@ func get_next_dialogue_line(key: String, override_resource: DialogueResource = n
 	var local_resource: DialogueResource = (override_resource if override_resource != null else resource)
 	
 	assert(local_resource.syntax_version == DialogueConstants.SYNTAX_VERSION, "This dialogue resource is older than the runtime expects.")
+	
+	# Temporarily add any extra game states that were passed in
+	_extra_game_states = extra_game_states
 	
 	var resource_path = local_resource.resource_path
 	if local_resource.lines.size() == 0:
@@ -97,7 +101,7 @@ func get_next_dialogue_line(key: String, override_resource: DialogueResource = n
 				self.is_dialogue_running = false
 				return null
 			else:
-				return get_next_dialogue_line(dialogue.next_id, local_resource)
+				return get_next_dialogue_line(dialogue.next_id, local_resource, extra_game_states)
 		else:
 			# End the conversation
 			self.is_dialogue_running = false
@@ -133,13 +137,13 @@ func get_resource_from_text(text: String) -> DialogueResource:
 	return new_resource
 
 
-func show_example_dialogue_balloon(title: String, local_resource: DialogueResource = null) -> void:
-	var dialogue = yield(get_next_dialogue_line(title, local_resource), "completed")
+func show_example_dialogue_balloon(title: String, local_resource: DialogueResource = null, extra_game_states: Array = []) -> void:
+	var dialogue = yield(get_next_dialogue_line(title, local_resource, extra_game_states), "completed")
 	if dialogue != null:
 		var balloon = preload("res://addons/dialogue_manager/example_balloon/example_balloon.tscn").instance()
 		balloon.dialogue = dialogue
 		get_tree().current_scene.add_child(balloon)
-		show_example_dialogue_balloon(yield(balloon, "actioned"), local_resource)
+		show_example_dialogue_balloon(yield(balloon, "actioned"), local_resource, extra_game_states)
 	
 
 ### Helpers
@@ -244,7 +248,7 @@ func set_is_dialogue_running(is_running: bool) -> void:
 func get_game_states() -> Array:
 	var current_scene = get_tree().current_scene
 	var unique_states = []
-	for state in [current_scene] + game_states:
+	for state in _extra_game_states + [current_scene] + game_states:
 		if not unique_states.has(state):
 			unique_states.append(state)
 	return unique_states
@@ -293,10 +297,7 @@ func mutate(mutation: Dictionary) -> void:
 								state.emit_signal(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7])
 						
 			"debug":
-				var printable = {}
-				for i in range(args.size()):
-					printable[mutation.get("args")[i][0].get("value")] = args[i]
-				print(printable)
+				prints("Debug:", args)
 	
 	# Or pass through to the resolver
 	else:

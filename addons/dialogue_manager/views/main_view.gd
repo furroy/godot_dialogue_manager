@@ -21,6 +21,7 @@ onready var new_dialogue_dialog := $NewDialogueDialog
 onready var open_dialogue_dialog := $OpenDialogueDialog
 onready var invalid_dialogue_dialog := $InvalidDialogueDialog
 onready var settings_dialog := $SettingsDialog
+onready var errors_confirm_dialog := $ErrorsConfirmDialog
 onready var insert_menu := $Margin/VBox/Toolbar/InsertMenu
 onready var translations_menu := $Margin/VBox/Toolbar/TranslationsMenu
 onready var save_translations_dialog := $SaveTranslationsDialog
@@ -36,6 +37,7 @@ var plugin
 var current_resource: DialogueResource
 var has_changed: bool = false
 var recent_resources: Array
+var pristine_raw_text: String = ""
 
 
 func _ready() -> void:
@@ -88,7 +90,7 @@ func _ready() -> void:
 	
 	file_label.icon = get_icon("Filesystem", "EditorIcons")
 	
-	recent_resources = settings.get_editor_value("recent_resources", [])
+	recent_resources = settings.get_user_value("recent_resources", [])
 	build_open_menu()
 	
 	editor.wrap_enabled = settings.get_editor_value("wrap_lines", false)
@@ -98,6 +100,11 @@ func _ready() -> void:
 func apply_changes() -> void:
 	if is_instance_valid(editor) and current_resource != null:
 		current_resource.set("raw_text", editor.text)
+		
+		if pristine_raw_text != current_resource.raw_text:
+			current_resource.set("resource_version", current_resource.resource_version + 1)
+			pristine_raw_text = current_resource.raw_text
+		
 		ResourceSaver.save(current_resource.resource_path, current_resource)
 		parse(true)
 
@@ -137,7 +144,7 @@ func set_resource(value: DialogueResource) -> void:
 		file_label.visible = true
 		editor.text = current_resource.raw_text
 		editor.clear_undo_history()
-		var cursors = settings.get_editor_value("resource_cursors", {})
+		var cursors = settings.get_user_value("resource_cursors", {})
 		if cursors.has(current_resource.resource_path):
 			var cursor = cursors.get(current_resource.resource_path)
 			editor.cursor_set_line(cursor.y, true)
@@ -150,6 +157,8 @@ func set_resource(value: DialogueResource) -> void:
 		translations_menu.disabled = false
 		_on_CodeEditor_text_changed()
 		has_changed = false
+		pristine_raw_text = current_resource.raw_text
+		
 	else:
 		content.visible = false
 		file_label.visible = false
@@ -180,7 +189,7 @@ func open_resource(resource: DialogueResource) -> void:
 	if resource.resource_path in recent_resources:
 		recent_resources.erase(resource.resource_path)
 	recent_resources.insert(0, resource.resource_path)
-	settings.set_editor_value("recent_resources", recent_resources)
+	settings.set_user_value("recent_resources", recent_resources)
 	build_open_menu()
 	parse(true)
 
@@ -241,7 +250,7 @@ func parse(force_show_errors: bool = false) -> void:
 	if force_show_errors or settings.get_editor_value("check_for_errors") or error_list.errors.size() > 0:
 		error_list.errors = result.errors
 		
-		for line_number in range(0, editor.get_line_count() - 1):
+		for line_number in range(0, editor.get_line_count()):
 			editor.set_line_as_bookmark(line_number, false)
 			for error in result.errors:
 				if error.get("line") == line_number:
@@ -463,8 +472,8 @@ func _on_open_menu_index_pressed(index):
 			open_dialogue_dialog.popup_centered()
 		"Clear recent files":
 			recent_resources.clear()
-			settings.set_editor_value("recent_resources", recent_resources)
-			settings.set_editor_value("resource_cursors", {})
+			settings.set_user_value("recent_resources", recent_resources)
+			settings.set_user_value("resource_cursors", {})
 			build_open_menu()
 		_:
 			open_resource_from_path(item)
@@ -527,14 +536,17 @@ func _on_SettingsButton_pressed():
 
 func _on_CodeEditor_active_title_changed(title):
 	title_list.select_title(title)
-	settings.set_editor_value("run_title", title)
+	settings.set_user_value("run_title", title)
 	run_node_button.hint_tooltip = "Play the test scene using \"%s\"" % title
 
 
 func _on_CodeEditor_cursor_changed():
-	var next_resource_cursors = settings.get_editor_value("resource_cursors", {})
-	next_resource_cursors[current_resource.resource_path] = Vector2(editor.cursor_get_column(), editor.cursor_get_line())
-	settings.set_editor_value("resource_cursors", next_resource_cursors)
+	var next_resource_cursors = settings.get_user_value("resource_cursors", {})
+	next_resource_cursors[current_resource.resource_path] = { 
+		x = editor.cursor_get_column(), 
+		y = editor.cursor_get_line() 
+	}
+	settings.set_user_value("resource_cursors", next_resource_cursors)
 
 
 func _on_ParseTimeout_timeout():
@@ -596,9 +608,12 @@ func _on_SettingsDialog_script_button_pressed(path):
 
 
 func _on_RunButton_pressed():
-	if settings.has_editor_value("run_title"):
-		settings.set_editor_value("run_resource", current_resource.resource_path)
-		plugin.get_editor_interface().play_custom_scene("res://addons/dialogue_manager/views/test_scene.tscn")
+	if current_resource.errors.size() > 0:
+		errors_confirm_dialog.popup_centered()
+		return
+		
+	settings.set_user_value("run_resource_path", current_resource.resource_path)
+	plugin.get_editor_interface().play_custom_scene("res://addons/dialogue_manager/views/test_scene.tscn")
 
 
 func _on_SearchButton_toggled(button_pressed):

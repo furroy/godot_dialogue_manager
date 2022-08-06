@@ -320,6 +320,12 @@ mode_overrides_title = false
 mode = 0
 filters = PoolStringArray( "*.csv ; Translations" )
 
+[node name="ErrorsConfirmDialog" type="AcceptDialog" parent="."]
+margin_right = 83.0
+margin_bottom = 58.0
+window_title = "You have errors"
+dialog_text = "You have errors that need fixing before you can run the test scene."
+
 [connection signal="has_update" from="UpdateChecker" to="." method="_on_UpdateChecker_has_update"]
 [connection signal="timeout" from="ParseTimeout" to="." method="_on_ParseTimeout_timeout"]
 [connection signal="pressed" from="Margin/VBox/Toolbar/FileLabel" to="." method="_on_FileLabel_pressed"]
