@@ -338,3 +338,34 @@ func _on_CodeEditor_cursor_changed():
 func _on_CodeEditor_text_changed():
 	check_active_title()
 	update_current_goto_title()
+
+func can_drop_data(position: Vector2, data) -> bool:
+#	print(data)
+	return "type" in data and data.type == "files"
+
+func insert_lines(new_lines : String) -> void:
+	var cursor := get_cursor()
+	var from: int = cursor.y
+#	var to: int = cursor.y
+	var lines := text.split("\n")
+	for line in new_lines.split("\n"):
+		lines.insert(from, line)
+	text = lines.join("\n")
+#	select(from, 0, to, get_line_width(to))
+	cursor.y += 1
+	set_cursor(cursor)
+
+func drop_data(position: Vector2, data) -> void:
+#	print(data)
+	var lines := ""
+	for file_name in data.files:
+		if file_name.ends_with(".tres"):
+			var ext = file_name.get_extension()
+			if ext:
+				file_name = file_name.substr(0, file_name.length() - ext.length() - 1)
+			lines += "set next_scene = \"" + file_name.get_file() + "\"\n"
+		else:
+			var image_name := "background_image" if text.find("background_image") == -1 else "foreground_image"
+			lines += "set " + image_name + " = \"" + file_name.get_file() + "\"\n"
+	if lines:
+		insert_lines(lines)
