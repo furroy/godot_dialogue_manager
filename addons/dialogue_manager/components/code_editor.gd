@@ -359,11 +359,18 @@ func drop_data(position: Vector2, data) -> void:
 #	print(data)
 	var lines := ""
 	for file_name in data.files:
-		if file_name.ends_with(".tres"):
-			var ext = file_name.get_extension()
+		var ext = file_name.get_extension()
+		if ext == "tres":
 			if ext:
 				file_name = file_name.substr(0, file_name.length() - ext.length() - 1)
 			lines += "set next_scene = \"" + file_name.get_file() + "\"\n"
+		elif ext == "ogg":
+			var base_name = file_name.get_file();
+			var short_name : String = base_name.substr(0, base_name.length() - ext.length() - 1)
+			if "loop" in file_name:
+				lines += "set music = \"" + short_name + "\"\n"
+			else:
+				lines += "do emit(\"play_sfx\", \"" + short_name + "\")\n"
 		else:
 			var image_name := "background_image" if text.find("background_image") == -1 else "foreground_image"
 			lines += "set " + image_name + " = \"" + file_name.get_file() + "\"\n"
